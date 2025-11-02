@@ -189,6 +189,7 @@ public class KokoroTTSModel: ObservableObject {
          guard !trimmedText.isEmpty else {
              return nil
          }
+        
 
          // Reset timing metrics
          audioGenerationTime = 0.0
@@ -472,8 +473,13 @@ public class KokoroTTSModel: ObservableObject {
             }
 
   
-      print("FINISHED GENERATIONG")
+            print("FINISHED GENERATIONG")
             resetAudioSystem()
+            DispatchQueue.main.async {
+                self.objectWillChange.send()
+                self.generationInProgress = false
+            }
+
             // Also reset the audio system to ensure clean state
        
         }
