@@ -210,8 +210,7 @@ public class KokoroTTSModel: ObservableObject {
 
 
          // No existing playback, start immediately
-          startSpeechGenerationToSave(text: trimmedText, voice: voice, speed: speed)
-        return []
+         return startSpeechGenerationToSave(text: trimmedText, voice: voice, speed: speed)
     }
 
     
@@ -430,65 +429,74 @@ public class KokoroTTSModel: ObservableObject {
     
     
     // MARK: - Audio Generation and Playback
-    private func startSpeechGenerationToSave(
-        text: String,
-        voice: TTSVoice,
-        speed: Float
-    ) {
-        print("STARTING SAVING AUDIO GENERATION")
-        
-        isGenerating = true
-        resetBufferCounters()
-        resetAudioSystem()
 
+    private func startSpeechGenerationToSave(text: String, voice: TTSVoice, speed: Float) -> [URL]{
+        print("STARTING SAVING AUDIO GENERATION")
+        // Update internal state
+        isGenerating = true
+
+        // Reset buffer counters for the new generation
+        resetBufferCounters()
+
+        // Make sure the UI state is also set
         DispatchQueue.main.async {
             self.objectWillChange.send()
             self.generationInProgress = true
         }
 
-        let generationStartTime = Date()
-        var receivedAudioChunks = false
-        var audioChunkUrls: [URL] = []
+        // Reset audio system to ensure clean state
+        resetAudioSystem()
 
+        // Start generation timer
+        let generationStartTime = Date()
+
+        // Use a local variable to track audio chunks that can be accessed in completion blocks
+        var receivedAudioChunks = false
+        var audioChunckUrls: [URL] = []
         do {
-            try kokoroTTSEngine.generateAudio(
+            // Use streaming by sentence approach
+            try! kokoroTTSEngine.generateAudio(
                 voice: voice,
                 text: text,
                 speed: speed
             ) { [weak self] audioBuffer in
-                guard let self else { return }
+                guard let self = self else { return }
 
+                // Mark that we've received at least one chunk
                 receivedAudioChunks = true
 
+                // Update generation time on first chunk
                 if self.audioGenerationTime == 0.0 {
                     self.audioGenerationTime = Date().timeIntervalSince(generationStartTime)
                 }
 
-                if let chunkUrl = self.saveAudioChunk(audioBuffer) {
-                    audioChunkUrls.append(chunkUrl)
+                // Play audio on main thread
+                
+                 let chunckUrl = self.saveAudioChunk(audioBuffer)
+                if let url = chunckUrl{
+                    audioChunckUrls.append(url)
+                    urls.append(url)
                 }
-
+                
+                
             }
 
-            // Once generation completes (after all chunks):
-            print("✅ FINISHED GENERATING AUDIO")
+  
+            print("FINISHED GENERATIONG")
             resetAudioSystem()
-
+            generationFinished()
             DispatchQueue.main.async {
                 self.objectWillChange.send()
                 self.generationInProgress = false
-                self.generationFinished()
             }
+            
 
-        } catch {
-            print("❌ Error during generation: \(error)")
-            isGenerating = false
-            DispatchQueue.main.async {
-                self.generationInProgress = false
-            }
+            // Also reset the audio system to ensure clean state
+       
         }
+        return audioChunckUrls
     }
-
+    
 
     private func playAudioChunk(_ audioBuffer: MLXArray) {
         // Skip empty chunks
@@ -520,6 +528,7 @@ public class KokoroTTSModel: ObservableObject {
         }
 
         incrementScheduledBufferCount()
+        
 
         // Schedule buffer playback with enhanced completion handling and buffer tracking
         playerNode.scheduleBuffer(buffer, at: nil, options: [], completionCallbackType: .dataPlayedBack) { [weak self] _ in
@@ -610,8 +619,9 @@ public class KokoroTTSModel: ObservableObject {
 
 
         incrementScheduledBufferCount()
-        
+        generationFinished()
         return outputURL
+        
     //    resetAudioSystem()
     }
 
