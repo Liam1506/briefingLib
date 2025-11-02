@@ -1,11 +1,19 @@
 import AVFoundation
 import MLX
 import SwiftUI
+import Combine
 #if os(iOS)
 import UIKit
 #endif
 
 public class KokoroTTSModel: ObservableObject {
+    
+    let eventPublisher = PassthroughSubject<[URL], Never>()
+
+    public func generationFinished() {
+        eventPublisher.send(urls)
+    }
+    
     private var kokoroTTSEngine: KokoroTTS!
     private var audioEngine: AVAudioEngine!
     private var playerNode: AVAudioPlayerNode!
