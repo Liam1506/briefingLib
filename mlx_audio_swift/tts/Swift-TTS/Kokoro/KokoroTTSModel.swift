@@ -8,7 +8,7 @@ import UIKit
 
 public class KokoroTTSModel: ObservableObject {
     
-    let eventPublisher = PassthroughSubject<[URL], Never>()
+   public let eventPublisher = PassthroughSubject<[URL], Never>()
 
     public func generationFinished() {
         eventPublisher.send(urls)
