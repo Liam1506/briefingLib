@@ -210,7 +210,8 @@ public class KokoroTTSModel: ObservableObject {
 
 
          // No existing playback, start immediately
-         return startSpeechGenerationToSave(text: trimmedText, voice: voice, speed: speed)
+          startSpeechGenerationToSave(text: trimmedText, voice: voice, speed: speed)
+        return []
     }
 
     
@@ -429,73 +430,65 @@ public class KokoroTTSModel: ObservableObject {
     
     
     // MARK: - Audio Generation and Playback
-
-    private func startSpeechGenerationToSave(text: String, voice: TTSVoice, speed: Float) -> [URL]{
+    private func startSpeechGenerationToSave(
+        text: String,
+        voice: TTSVoice,
+        speed: Float
+    ) {
         print("STARTING SAVING AUDIO GENERATION")
-        // Update internal state
+        
         isGenerating = true
-
-        // Reset buffer counters for the new generation
         resetBufferCounters()
+        resetAudioSystem()
 
-        // Make sure the UI state is also set
         DispatchQueue.main.async {
             self.objectWillChange.send()
             self.generationInProgress = true
         }
 
-        // Reset audio system to ensure clean state
-        resetAudioSystem()
-
-        // Start generation timer
         let generationStartTime = Date()
-
-        // Use a local variable to track audio chunks that can be accessed in completion blocks
         var receivedAudioChunks = false
-        var audioChunckUrls: [URL] = []
+        var audioChunkUrls: [URL] = []
+
         do {
-            // Use streaming by sentence approach
-            try! kokoroTTSEngine.generateAudio(
+            try kokoroTTSEngine.generateAudio(
                 voice: voice,
                 text: text,
                 speed: speed
             ) { [weak self] audioBuffer in
-                guard let self = self else { return }
+                guard let self else { return }
 
-                // Mark that we've received at least one chunk
                 receivedAudioChunks = true
 
-                // Update generation time on first chunk
                 if self.audioGenerationTime == 0.0 {
                     self.audioGenerationTime = Date().timeIntervalSince(generationStartTime)
                 }
 
-                // Play audio on main thread
-                
-                 let chunckUrl = self.saveAudioChunk(audioBuffer)
-                if let url = chunckUrl{
-                    audioChunckUrls.append(url)
-                    urls.append(url)
+                if let chunkUrl = self.saveAudioChunk(audioBuffer) {
+                    audioChunkUrls.append(chunkUrl)
                 }
-                
+
             }
 
-  
-            print("FINISHED GENERATIONG")
+            // Once generation completes (after all chunks):
+            print("✅ FINISHED GENERATING AUDIO")
             resetAudioSystem()
+
             DispatchQueue.main.async {
                 self.objectWillChange.send()
+                self.generationInProgress = false
                 self.generationFinished()
+            }
+
+        } catch {
+            print("❌ Error during generation: \(error)")
+            isGenerating = false
+            DispatchQueue.main.async {
                 self.generationInProgress = false
             }
-            
-
-            // Also reset the audio system to ensure clean state
-       
         }
-        return audioChunckUrls
     }
-    
+
 
     private func playAudioChunk(_ audioBuffer: MLXArray) {
         // Skip empty chunks
