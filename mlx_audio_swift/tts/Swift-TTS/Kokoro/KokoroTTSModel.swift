@@ -621,6 +621,10 @@ public class KokoroTTSModel: ObservableObject {
 
 
         incrementScheduledBufferCount()
+        
+        if(self.scheduledBufferCount == self.completedBufferCount){
+            generationFinished()
+        }
         return outputURL
         
     //    resetAudioSystem()
