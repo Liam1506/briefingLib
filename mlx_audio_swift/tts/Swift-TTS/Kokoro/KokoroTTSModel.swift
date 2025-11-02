@@ -476,9 +476,10 @@ public class KokoroTTSModel: ObservableObject {
                 if let url = chunckUrl{
                     audioChunckUrls.append(url)
                     urls.append(url)
-                    if(!generationInProgress)
+                    
+                    let sentencesCount = SentenceTokenizer.splitIntoSentences(text: text).count
+                    if(urls.count == sentencesCount)
                     {
-                        
                         generationFinished()
                     }
                     

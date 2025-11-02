@@ -552,6 +552,8 @@ public class KokoroTTS {
         }
         MLX.GPU.clearCache()
       }
+        
+        
 
       // Reset model after completing a long text to free memory
       if sentences.count > 5 {
