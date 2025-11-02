@@ -22,6 +22,8 @@ public class KokoroTTSModel: ObservableObject {
 
     // Published property for UI updates - indicates generation OR playback is in progress
     @Published public var generationInProgress = false
+    
+    @Published public var urls: [URL] = []
 
     // A separate property to track if audio is currently playing
     @Published public var isAudioPlaying: Bool = false {
@@ -464,6 +466,7 @@ public class KokoroTTSModel: ObservableObject {
                  let chunckUrl = self.saveAudioChunk(audioBuffer)
                 if let url = chunckUrl{
                     audioChunckUrls.append(url)
+                    urls.append(url)
                 }
                 
             }
