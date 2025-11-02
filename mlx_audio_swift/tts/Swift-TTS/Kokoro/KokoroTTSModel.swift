@@ -476,21 +476,18 @@ public class KokoroTTSModel: ObservableObject {
                 if let url = chunckUrl{
                     audioChunckUrls.append(url)
                     urls.append(url)
-                    if(self.completedBufferCount == self.scheduledBufferCount){
+                    if(!generationInProgress)
+                    {
+                        
                         generationFinished()
                     }
+                    
                 }
                 
                 
             }
-            generationFinished()
   
-            print("FINISHED GENERATIONG")
             resetAudioSystem()
-            DispatchQueue.main.async {
-                self.objectWillChange.send()
-                self.generationInProgress = false
-            }
             
 
             // Also reset the audio system to ensure clean state
