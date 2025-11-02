@@ -182,10 +182,10 @@ public class KokoroTTSModel: ObservableObject {
          startSpeechGeneration(text: trimmedText, voice: voice, speed: speed)
     }
 
-    public func save(_ text: String, _ voice: TTSVoice, speed: Float = 1.0) {
+    public func save(_ text: String, _ voice: TTSVoice, speed: Float = 1.0)->[URL]? {
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
          guard !trimmedText.isEmpty else {
-             return
+             return nil
          }
 
          // Reset timing metrics
@@ -199,7 +199,7 @@ public class KokoroTTSModel: ObservableObject {
 
 
          // No existing playback, start immediately
-         startSpeechGenerationToSave(text: trimmedText, voice: voice, speed: speed)
+         return startSpeechGenerationToSave(text: trimmedText, voice: voice, speed: speed)
     }
 
     
@@ -419,7 +419,7 @@ public class KokoroTTSModel: ObservableObject {
     
     // MARK: - Audio Generation and Playback
 
-    private func startSpeechGenerationToSave(text: String, voice: TTSVoice, speed: Float) {
+    private func startSpeechGenerationToSave(text: String, voice: TTSVoice, speed: Float) -> [URL]{
         print("STARTING SAVING AUDIO GENERATION")
         // Update internal state
         isGenerating = true
@@ -441,7 +441,7 @@ public class KokoroTTSModel: ObservableObject {
 
         // Use a local variable to track audio chunks that can be accessed in completion blocks
         var receivedAudioChunks = false
-
+        var audioChunckUrls: [URL] = []
         do {
             // Use streaming by sentence approach
             try! kokoroTTSEngine.generateAudio(
@@ -461,7 +461,10 @@ public class KokoroTTSModel: ObservableObject {
 
                 // Play audio on main thread
                 
-                   self.saveAudioChunk(audioBuffer)
+                 let chunckUrl = self.saveAudioChunk(audioBuffer)
+                if let url = chunckUrl{
+                    audioChunckUrls.append(url)
+                }
                 
             }
 
@@ -471,6 +474,7 @@ public class KokoroTTSModel: ObservableObject {
             // Also reset the audio system to ensure clean state
        
         }
+        return audioChunckUrls
     }
     
 
@@ -566,12 +570,12 @@ public class KokoroTTSModel: ObservableObject {
     }
     
     
-    private func saveAudioChunk(_ audioBuffer: MLXArray) {
+    private func saveAudioChunk(_ audioBuffer: MLXArray) -> URL?{
         // Skip empty chunks
         let audioShape = audioBuffer.shape
         guard !isAudioEmpty(shape: audioShape) else {
             print("Skipping empty audio chunk")
-            return
+            return nil
         }
 
         // Extract audio data
@@ -580,7 +584,7 @@ public class KokoroTTSModel: ObservableObject {
         // Create PCM buffer
         guard let buffer = createAudioBuffer(frameCount: frameCount, audioData: audioData) else {
             print("Failed to create audio buffer")
-            return
+            return nil
         }
         
         let outputURL = URL(fileURLWithPath: NSTemporaryDirectory())
@@ -594,6 +598,8 @@ public class KokoroTTSModel: ObservableObject {
 
 
         incrementScheduledBufferCount()
+        
+        return outputURL
     //    resetAudioSystem()
     }
 
