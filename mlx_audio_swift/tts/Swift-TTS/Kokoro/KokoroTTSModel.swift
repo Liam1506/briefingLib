@@ -483,7 +483,7 @@ public class KokoroTTSModel: ObservableObject {
                 
                 
             }
-
+            generationFinished()
   
             print("FINISHED GENERATIONG")
             resetAudioSystem()
