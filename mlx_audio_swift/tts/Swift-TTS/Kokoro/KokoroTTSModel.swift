@@ -485,8 +485,10 @@ public class KokoroTTSModel: ObservableObject {
             resetAudioSystem()
             DispatchQueue.main.async {
                 self.objectWillChange.send()
+                self.generationFinished()
                 self.generationInProgress = false
             }
+            
 
             // Also reset the audio system to ensure clean state
        
